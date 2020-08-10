@@ -45,12 +45,9 @@
 (declare persist-media-object-on-fs)
 (declare persist-media-thumbnail-on-fs)
 
-(def valid-media-object-types?
-  #{"image/jpeg", "image/png", "image/webp", "image/svg+xml"})
-
 (s/def :uxbox$upload/filename ::us/string)
 (s/def :uxbox$upload/size ::us/integer)
-(s/def :uxbox$upload/content-type valid-media-object-types?)
+(s/def :uxbox$upload/content-type media/valid-media-types)
 (s/def :uxbox$upload/tempfile any?)
 
 (s/def ::upload
@@ -90,11 +87,7 @@
 
 (defn create-media-object
   [conn {:keys [id content file-id name is-local]}]
-  (when-not (valid-media-object-types? (:content-type content))
-    (ex/raise :type :validation
-              :code :media-type-not-allowed
-              :hint "Seems like you are uploading an invalid media object."))
-
+  (media/validate-media-type (:content-type content))
   (let [info  (media/run {:cmd :info :input {:path (:tempfile content)
                                              :mtype (:content-type content)}})
         path  (persist-media-object-on-fs content)
